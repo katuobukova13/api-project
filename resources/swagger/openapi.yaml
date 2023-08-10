@@ -1,0 +1,487 @@
+openapi: 3.0.3
+info:
+  title: INTEGRATION SERVICE API
+  version: 1.0.0
+servers:
+  - url: ${SWAGGER_SERVER}
+paths:
+  /api/user/{id}:
+    get:
+      tags:
+        - Users
+      description: отдаёт JSON объект пользователя c ID = {id}, без поля "пароль"
+      parameters:
+        - name: id
+          in: path
+          required: true
+      security:
+        - api_key: [ ]
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          description: user not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/user/{id}/projects:
+    get:
+      tags:
+        - Users
+      description: отдаёт массив моделей проектов пользователя. Если передан GET параметр search - дополнительно фильтрует проекты по вхождению искомой строки search в названии проекта
+      parameters:
+        - name: id
+          in: path
+          required: true
+        - name: search
+          in: query
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProjectsGetResponse'
+        '404':
+          description: user not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/projects/{id}:
+    get:
+      tags:
+        - Projects
+      description: отдёт JSON объект проекта с ID = {id}
+      parameters:
+        - name: id
+          in: path
+          required: true
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '404':
+          description: project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - Projects
+      description: Редактирует и возвращает новый объект проекта {id}, либо ошибку валидации (user_id), либо ошибку обновления
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+        - name: user_id
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: description
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Project updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '500':
+          description: Error in updating project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Projects
+      description: Удаляет проект {id}, возвращает  'success' => true в случае успеха, либо ошибку
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Project deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessfulDelete'
+        '500':
+          description: Error deleting the project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/projects/{id}/simple-tasks-list:
+    get:
+      tags:
+        - Projects
+      description: отдаёт массив задач в проекте, каждая задача в массиве должна иметь вид [ 'id', 'название', 'ID пользователя', 'статус' ]. Если передан GET параметр user_id - дополнительно фильтрует задачи по принадлежности пользователю с id = user_id
+      parameters:
+        - name: id
+          in: path
+          required: true
+        - name: user_id
+          in: query
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTasksGetResponse'
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/projects:
+    post:
+      tags:
+        - Projects
+      description: Создаёт и возвращает объект нового проекта с переданными параметрами, либо ошибку валидации (user_id), либо ошибку создания
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectRequestBody'
+      responses:
+        '201':
+          description: Project created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '500':
+          description: Failed to create project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/projects/{id}/tasks/{task_id}:
+    delete:
+      tags:
+        - Tasks
+      description: Удаляет задачу {task_id} в проекте {id}, возвращает success => true  в случае успеха, либо ошибку
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+        - name: task_id
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Task deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessfulDelete'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error deleting the task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - Tasks
+      description: Редактирует и возвращает новый объект задачи {task_id}, либо ошибку валидации (user_id, project_id), либо ошибку обновления
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+        - name: task_id
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+        - name: user_id
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: description
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - "backlog"
+              - "wip"
+              - "done"
+              - "canceled"
+      responses:
+        '200':
+          description: Project updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '500':
+          description: Error in updating the task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/projects/{id}/tasks:
+    post:
+      tags:
+        - Tasks
+      description: Создаёт и возвращает объект новой задачи привязанной к проекту {id}, либо ошибку валидации (user_Id, project_id), либо ошибку создания. Статус может быть выбран из 'backlog', 'wip', 'done', 'canceled'.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskRequestBody'
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '500':
+          description: Failed to create the task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    UserResponse:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+        name:
+          type: "string"
+        email:
+          type: "string"
+        email_verified_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    UserProjectsGetResponse:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: "integer"
+            format: "int64"
+          name:
+            type: "string"
+          description:
+            type: "string"
+          user_id:
+            type: "integer"
+            format: "int64"
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+    ProjectResponse:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+        name:
+          type: "string"
+        description:
+          type: "string"
+        user_id:
+          type: "integer"
+          format: "int64"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ProjectTasksGetResponse:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: "integer"
+            format: "int64"
+          name:
+            type: "string"
+          user_id:
+            type: "integer"
+            format: "int64"
+          status:
+            type: "string"
+            description: "Task Status"
+            enum:
+              - "backlog"
+              - "wip"
+              - "done"
+              - "canceled"
+    ProjectRequestBody:
+      type: object
+      properties:
+        name:
+          type: string
+          required: true
+        user_id:
+          type: "integer"
+          format: "int64"
+          required: true
+        description:
+          type: string
+    TaskResponse:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+        name:
+          type: "string"
+        description:
+          type: "string"
+        user_id:
+          type: "integer"
+          format: "int64"
+        project_id:
+          type: "integer"
+          format: "int64"
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    TaskRequestBody:
+      type: object
+      properties:
+        name:
+          type: string
+          required: true
+        user_id:
+          type: "integer"
+          format: "int64"
+          required: true
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+            - "backlog"
+            - "wip"
+            - "done"
+            - "canceled"
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+    SuccessfulDelete:
+      type: object
+      properties:
+        success:
+          type: boolean
+
+
+
+
+
+
